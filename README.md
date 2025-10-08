@@ -47,7 +47,51 @@ digital together:
 * **Identity & Auth:** DIDs/VCs, WalletConnect, passkeys.
 * **Observability/DevOps:** Foundry/Hardhat, Tenderly, Grafana/Prometheus, OTel, K8s.
 
-👉 See the placeholder diagram: `docs/diagrams/super-mesh-architecture.png` (TODO).
+👉 Architecture diagram (inline Mermaid):
+
+```mermaid
+flowchart TB
+  subgraph L1[Ethereum L1 — Settlement & Backstop]
+    anchor[Finality anchors\nBackstop Timelocks\nBridges (CCIP)]
+  end
+  subgraph L2[TAG IT L2 — OP Stack + EigenDA]
+    direction TB
+    exec[Smart Contracts\n(Governor, Timelock,\nDigital Twin NFTs,\nChain-of-Custody, Recovery)]
+    da[(EigenDA — Data Availability)]
+    oracles[Oracles — Chainlink/Pyth]
+    index[Indexers — The Graph/Goldsky]
+    observability[Observability — OTel → Grafana/Prom]
+  end
+  subgraph Apps[ORACULAR Apps & Services]
+    direction TB
+    mobile[Mobile/Web Apps\n(NFC scan, verify, report)]
+    custody[Logistics Services\n(Hand-offs, signing)]
+    ai[AI Auditing & Anomaly Detection]
+    api[Public/Partner APIs]
+  end
+  subgraph Edge[Physical World]
+    nfc[NFC Tags (encrypted)]
+    bt[Bluetooth Tags (optional)]
+    hw[Readers / Phones]
+  end
+  nfc -->|bind/scan| mobile
+  bt  -->|ping/telemetry| custody
+  hw  -->|scan events| mobile
+  mobile -->|verify/claim| api
+  custody -->|handoff events| api
+  api -->|tx: mint, update, flag| exec
+  exec -->|emit| index
+  exec <--> oracles
+  exec --> da
+  anchor <--> exec
+  exec --> observability
+  index --> ai
+  ai -->|alerts/recommendations| api
+```
+
+> Source: `docs/diagrams/super-mesh-architecture.mmd`
+> Need a PNG? Use the **Render Diagrams** workflow (see below) to download it as an artifact.
+
 
 ## Governance & trust model
 
