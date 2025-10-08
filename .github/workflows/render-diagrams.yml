@@ -1,0 +1,32 @@
+name: Render Diagrams
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'docs/diagrams/**/*.mmd'
+      - '.github/workflows/render-diagrams.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Mermaid CLI
+        run: |
+          npm init -y > /dev/null 2>&1 || true
+          npm i -D @mermaid-js/mermaid-cli@10.9.1
+      - name: Render super-mesh PNG
+        run: |
+          npx @mermaid-js/mermaid-cli \
+            -i docs/diagrams/super-mesh-architecture.mmd \
+            -o docs/diagrams/super-mesh-architecture.png \
+            -b transparent -w 1600
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: super-mesh-diagram
+          path: docs/diagrams/super-mesh-architecture.png
