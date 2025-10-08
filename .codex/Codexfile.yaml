@@ -1,0 +1,21 @@
+schema_version: 1.0
+repo: protocol-contracts-governance
+kind: contracts
+owners: ["[OWNER_TEAM]", "[SECURITY_TEAM]"]
+required_checks: [build, tests, slither, coverage>=85, sbom, sign, provenance]
+environments:
+  - { name: dev,  rpc_url: [L2_RPC], signer: env:PRIVATE_KEY_DEV,  timelock: [TIMELOCK_ADDRESS], safe: [SAFE_ADDRESS], approvals: ["[OWNER_TEAM]"] }
+  - { name: stage, rpc_url: [L2_RPC], signer: env:PRIVATE_KEY_STAGE, timelock: [TIMELOCK_ADDRESS], safe: [SAFE_ADDRESS], approvals: ["[OWNER_TEAM]","[SECURITY_TEAM]"] }
+  - { name: prod, rpc_url: [L2_RPC], signer: env:PRIVATE_KEY_PROD, timelock: [TIMELOCK_ADDRESS], safe: [SAFE_ADDRESS], approvals: ["[OWNER_TEAM]","[SECURITY_TEAM]","[PLATFORM_TEAM]"] }
+steps:
+  build:   [ { run: "forge build" } ]
+  tests:   [ { run: "forge test --match-path test/*Governance*.t.sol" } ]
+  security:
+    - run: slither . --sarif slither.sarif
+    - run: ./scripts/formal/spec_check.sh # STEM: security/formal@v1
+  deploy:
+    - run: codex deploy --repo protocol-contracts-governance --env {{ env }} --version {{ git_sha }}
+  post_deploy:
+    - run: codex verify --repo protocol-contracts-governance --env {{ env }} --checks timelock,roles,events
+  rollback:
+    - run: codex rollback --repo protocol-contracts-governance --env {{ env }} --to previous-stable
