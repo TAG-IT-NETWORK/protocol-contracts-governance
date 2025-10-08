@@ -1,0 +1,27 @@
+name: ci-smoke
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Install deps (if JS/TS)
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; fi
+      - name: Foundry install
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          ~/.foundry/bin/foundryup
+      - name: Build & test (Foundry)
+        run: |
+          if [ -f foundry.toml ] || [ -d src ]; then ~/.foundry/bin/forge --version && ~/.foundry/bin/forge build && ~/.foundry/bin/forge test -vvv; else echo "No Foundry project detected, skipping"; fi
