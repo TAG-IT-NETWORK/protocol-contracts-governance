@@ -1,0 +1,3 @@
+required_checks:
+  post_deploy:
+    - run: codex verify --repo protocol-contracts-governance --env {{ env }} --checks timelock,events
