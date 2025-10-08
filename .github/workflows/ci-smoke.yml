@@ -1,0 +1,44 @@
+name: CI Smoke
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  foundry:
+    name: Foundry build & test
+    if: ${{ hashFiles('**/foundry.toml') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Run forge build
+        run: forge build
+      - name: Run forge test
+        run: forge test
+
+  node:
+    name: Node build & test
+    if: ${{ hashFiles('**/package.json') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build (if available)
+        run: pnpm build --if-present
+      - name: Test (if available)
+        run: pnpm test --if-present
