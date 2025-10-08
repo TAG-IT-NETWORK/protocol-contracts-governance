@@ -1,13 +1,11 @@
 # protocol-contracts-governance
+OpenZeppelin Governor + Timelock for TAGIT. Primary execution on TAGIT L2 (OP Stack + EigenDA). Ethereum L1 holds backstop timelocks and anchors. CCIP used for cross-chain messaging where needed. Includes Foundry tests and Codex CI/CD.
 
-Governance smart contracts for protocol governance functions.
+## Key params
+- Default votingDelay=1 block, votingPeriod=~1 week, quorum=4%, threshold=0 (adjust in Deploy script).
+- Timelock is adminned by SAFE; Governor is proposer; anyone can execute.
 
-## Local environment setup
-
-Run the reproducible environment bootstrap script to install the required toolchain (Node.js, pnpm, Foundry, and auditing dependencies):
-
-```bash
-./scripts/setup.sh
-```
-
-> **Note:** The Foundry installer fetches binaries from `https://foundry.paradigm.xyz`. If the download is blocked by a proxy (e.g. HTTP 403), rerun the script once the network restriction is resolved.
+## Quickstart
+forge install
+forge build
+forge test

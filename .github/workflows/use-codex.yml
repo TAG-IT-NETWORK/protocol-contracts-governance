@@ -1,0 +1,10 @@
+name: use-codex
+on:
+  workflow_dispatch: {}
+  push:
+    branches: ["main"]
+jobs:
+  contracts:
+    uses: TAG-IT-NETWORK/strategy-governance/.github/workflows/pipeline-contracts.yml@main
+    with:
+      env: dev
