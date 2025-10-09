@@ -39,58 +39,81 @@ digital together:
 
 ## Architecture at a glance
 
-* **Execution:** TAG IT **L2 (OP Stack)** with **EigenDA** for data availability.
-* **Settlement/Finality:** Ethereum L1 anchors and backstop timelocks.
-* **Interop:** Chainlink (preferred), plus IBC/Axelar/Wormhole as needed.
-* **Storage:** IPFS/Filecoin/Arweave for artifacts; Postgres for ops/analytics.
-* **Indexing:** The Graph/Goldsky.
-* **Identity & Auth:** DIDs/VCs, WalletConnect, passkeys.
-* **Observability/DevOps:** Foundry/Hardhat, Tenderly, Grafana/Prometheus, OTel, K8s.
+- **Execution:** TAG IT L2 (OP Stack) with **EigenDA** for data availability.
+- **Settlement/Finality:** Ethereum L1 anchors and backstop timelocks.
+- **Interop:** Chainlink (preferred), plus IBC/Axelar/Wormhole as needed.
+- **Storage:** IPFS/Filecoin/Arweave for artifacts; Postgres for ops/analytics.
+- **Indexing:** The Graph/Goldsky.
+- **Identity & Auth:** DIDs/VCs, WalletConnect, passkeys.
+- **Observability/DevOps:** Foundry/Hardhat, Tenderly, Grafana/Prometheus, OTel, K8s.
 
-👉 Architecture diagram (inline Mermaid):
+> If the interactive diagram doesn’t render, expand the fallback below.
 
 ```mermaid
 flowchart TB
-  subgraph L1[Ethereum L1 — Settlement & Backstop]
-    anchor[Finality anchors\nBackstop Timelocks\nBridges (CCIP)]
+  %% ---------- L1 ----------
+  subgraph L1["Ethereum L1 — Settlement & Backstop"]
+    A[Finality Anchors]
+    B[Backstop Timelocks]
+    C[Bridges (CCIP)]
   end
-  subgraph L2[TAG IT L2 — OP Stack + EigenDA]
+
+  %% ---------- L2 ----------
+  subgraph L2["TAG IT L2 — OP Stack + EigenDA"]
     direction TB
-    exec[Smart Contracts\n(Governor, Timelock,\nDigital Twin NFTs,\nChain-of-Custody, Recovery)]
-    da[(EigenDA — Data Availability)]
-    oracles[Oracles — Chainlink/Pyth]
-    index[Indexers — The Graph/Goldsky]
-    observability[Observability — OTel → Grafana/Prom]
+    D[Rollup Sequencer]
+    E[Data Availability: EigenDA]
+    F[Execution: OP Stack]
+    G[Governance Contracts]
+    H[TAGIT Protocol Contracts]
   end
-  subgraph Apps[ORACULAR Apps & Services]
-    direction TB
-    mobile[Mobile/Web Apps\n(NFC scan, verify, report)]
-    custody[Logistics Services\n(Hand-offs, signing)]
-    ai[AI Auditing & Anomaly Detection]
-    api[Public/Partner APIs]
+
+  %% ---------- Off‑chain ----------
+  subgraph OFF["Off‑chain Services"]
+    I[Chainlink / Oracles]
+    J[Indexing: The Graph / Goldsky]
+    K[Storage: IPFS / Filecoin / Arweave]
+    L[Ops DB: Postgres]
   end
-  subgraph Edge[Physical World]
-    nfc[NFC Tags (encrypted)]
-    bt[Bluetooth Tags (optional)]
-    hw[Readers / Phones]
+
+  %% ---------- Identity & Ops ----------
+  subgraph ID["Identity & Auth"]
+    M[DIDs / VCs]
+    N[WalletConnect / Passkeys]
   end
-  nfc -->|bind/scan| mobile
-  bt  -->|ping/telemetry| custody
-  hw  -->|scan events| mobile
-  mobile -->|verify/claim| api
-  custody -->|handoff events| api
-  api -->|tx: mint, update, flag| exec
-  exec -->|emit| index
-  exec <--> oracles
-  exec --> da
-  anchor <--> exec
-  exec --> observability
-  index --> ai
-  ai -->|alerts/recommendations| api
+
+  subgraph OBS["Observability & DevOps"]
+    O[Grafana / Prometheus]
+    P[OpenTelemetry / Kubernetes]
+  end
+
+  %% ---------- Edges ----------
+  D --> F
+  F --> H
+  F --> E
+
+  H -->|Anchors| A
+  H -->|Timelocks| B
+  H -->|Cross‑chain| C
+
+  I --> H
+  J --> H
+  K --> H
+  L --> H
+  M --> H
+  N --> H
+  O --> H
+  P --> H
 ```
 
-> Source: `docs/diagrams/super-mesh-architecture.mmd`
-> Need a PNG? Use the **Render Diagrams** workflow (see below) to download it as an artifact.
+<details>
+  <summary><strong>PNG fallback (for viewers without Mermaid)</strong></summary>
+
+  <p>
+    <em>PNG render of the same diagram:</em><br/>
+    <img alt="Architecture diagram" src="docs/diagrams/super-mesh-architecture.png" />
+  </p>
+</details>
 
 
 ## Governance & trust model
