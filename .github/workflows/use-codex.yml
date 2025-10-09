@@ -1,0 +1,47 @@
+name: use-codex
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "dev|stage|prod"
+        required: true
+        type: string
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # Foundry toolchain
+      - uses: foundry-rs/foundry-toolchain@v1
+        with: { version: nightly }
+
+      # (Optional) Slither; harmless if you skip
+      - name: Install slither
+        run: |
+          python -m pip install --upgrade pip
+          pip install slither-analyzer solc-select
+          solc-select install 0.8.26
+          solc-select use 0.8.26
+
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: PLAN
+        run: python tools/codex/codex.py plan --repo ${{ github.repository }} --env ${{ inputs.env }}
+
+      - name: DEPLOY
+        env:
+          L2_RPC: ${{ secrets.L2_RPC }}
+          DEPLOYER_KEY: ${{ secrets.DEPLOYER_KEY }}
+          BLOCK_EXPLORER_API_KEY: ${{ secrets.BLOCK_EXPLORER_API_KEY }}
+          CHAIN_ID: ${{ secrets.CHAIN_ID }}
+        run: python tools/codex/codex.py deploy --repo ${{ github.repository }} --env ${{ inputs.env }}
+
+      - name: VERIFY
+        env:
+          L2_RPC: ${{ secrets.L2_RPC }}
+        run: python tools/codex/codex.py verify --repo ${{ github.repository }} --env ${{ inputs.env }}
