@@ -1,3 +1,4 @@
+# .github/workflows/use-codex.yml
 name: use-codex
 on:
   workflow_dispatch:
@@ -15,12 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Foundry toolchain
       - uses: foundry-rs/foundry-toolchain@v1
         with: { version: nightly }
 
-      # (Optional) Slither; harmless if you skip
-      - name: Install slither
+      - name: (optional) Install Slither
         run: |
           python -m pip install --upgrade pip
           pip install slither-analyzer solc-select
@@ -35,13 +34,15 @@ jobs:
 
       - name: DEPLOY
         env:
-          L2_RPC: ${{ secrets.L2_RPC }}
-          DEPLOYER_KEY: ${{ secrets.DEPLOYER_KEY }}
-          BLOCK_EXPLORER_API_KEY: ${{ secrets.BLOCK_EXPLORER_API_KEY }}
-          CHAIN_ID: ${{ secrets.CHAIN_ID }}
+          # map to your existing *_DEV secrets
+          L2_RPC:                 ${{ secrets.L2_RPC_DEV }}
+          DEPLOYER_KEY:           ${{ secrets.PRIVATE_KEY_DEV }}
+          SAFE_ADDRESS:           ${{ secrets.SAFE_ADDRESS_DEV }}
+          BLOCK_EXPLORER_API_KEY: ${{ secrets.BLOCK_EXPLORER_API_KEY_DEV }} # <-- add this secret in Settings
+          CHAIN_ID:               11155420   # OP Sepolia
         run: python tools/codex/codex.py deploy --repo ${{ github.repository }} --env ${{ inputs.env }}
 
       - name: VERIFY
         env:
-          L2_RPC: ${{ secrets.L2_RPC }}
+          L2_RPC: ${{ secrets.L2_RPC_DEV }}
         run: python tools/codex/codex.py verify --repo ${{ github.repository }} --env ${{ inputs.env }}
