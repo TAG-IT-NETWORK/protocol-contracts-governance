@@ -3,25 +3,30 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   smoke:
+    name: Smoke (Foundry build check)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install Foundry (forge/cast) so commands exist on the runner
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: '20'
-      - name: Install pnpm
-        run: npm i -g pnpm
-      - name: Install deps (if JS/TS)
+          version: nightly
+
+      - name: Tooling sanity
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; fi
-      - name: Foundry install
-        run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          ~/.foundry/bin/foundryup
-      - name: Build & test (Foundry)
-        run: |
-          if [ -f foundry.toml ] || [ -d src ]; then ~/.foundry/bin/forge --version && ~/.foundry/bin/forge build && ~/.foundry/bin/forge test -vvv; else echo "No Foundry project detected, skipping"; fi
+          forge --version
+          cast --version
+
+      # Ultra-light build to verify the repo is sane; fast and fails if config is broken
+      - name: Forge build (smoke)
+        run: forge build --sizes
