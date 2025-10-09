@@ -3,25 +3,38 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   smoke:
+    name: Smoke (Foundry build check)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: '20'
-      - name: Install pnpm
-        run: npm i -g pnpm
-      - name: Install deps (if JS/TS)
+          version: nightly
+
+      - name: Tooling sanity
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; fi
-      - name: Foundry install
+          forge --version
+          cast --version
+
+      # ✅ Install deps so imports like @openzeppelin/... resolve
+      - name: Install dependencies
         run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          ~/.foundry/bin/foundryup
-      - name: Build & test (Foundry)
-        run: |
-          if [ -f foundry.toml ] || [ -d src ]; then ~/.foundry/bin/forge --version && ~/.foundry/bin/forge build && ~/.foundry/bin/forge test -vvv; else echo "No Foundry project detected, skipping"; fi
+          mkdir -p lib
+          forge install --no-commit OpenZeppelin/openzeppelin-contracts@v4.9.6
+
+      # Optional: quick tree (helps if pathing is ever off)
+      - name: Show tree (top level)
+        run: ls -la
+
+      - name: Forge build (smoke)
+        run: forge build --sizes
