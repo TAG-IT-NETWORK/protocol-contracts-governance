@@ -47,74 +47,7 @@ digital together:
 - **Identity & Auth:** DIDs/VCs, WalletConnect, passkeys.
 - **Observability/DevOps:** Foundry/Hardhat, Tenderly, Grafana/Prometheus, OTel, K8s.
 
-> If the interactive diagram doesn’t render, expand the fallback below.
-
-```mermaid
-flowchart TB
-  %% ---------- L1 ----------
-  subgraph L1["Ethereum L1 — Settlement & Backstop"]
-    A[Finality Anchors]
-    B[Backstop Timelocks]
-    C[Bridges (CCIP)]
-  end
-
-  %% ---------- L2 ----------
-  subgraph L2["TAG IT L2 — OP Stack + EigenDA"]
-    direction TB
-    D[Rollup Sequencer]
-    E[Data Availability: EigenDA]
-    F[Execution: OP Stack]
-    G[Governance Contracts]
-    H[TAGIT Protocol Contracts]
-  end
-
-  %% ---------- Off‑chain ----------
-  subgraph OFF["Off‑chain Services"]
-    I[Chainlink / Oracles]
-    J[Indexing: The Graph / Goldsky]
-    K[Storage: IPFS / Filecoin / Arweave]
-    L[Ops DB: Postgres]
-  end
-
-  %% ---------- Identity & Ops ----------
-  subgraph ID["Identity & Auth"]
-    M[DIDs / VCs]
-    N[WalletConnect / Passkeys]
-  end
-
-  subgraph OBS["Observability & DevOps"]
-    O[Grafana / Prometheus]
-    P[OpenTelemetry / Kubernetes]
-  end
-
-  %% ---------- Edges ----------
-  D --> F
-  F --> H
-  F --> E
-
-  H -->|Anchors| A
-  H -->|Timelocks| B
-  H -->|Cross‑chain| C
-
-  I --> H
-  J --> H
-  K --> H
-  L --> H
-  M --> H
-  N --> H
-  O --> H
-  P --> H
-```
-
-<details>
-  <summary><strong>PNG fallback (for viewers without Mermaid)</strong></summary>
-
-  <p>
-    <em>PNG render of the same diagram:</em><br/>
-    <img alt="Architecture diagram" src="docs/diagrams/super-mesh-architecture.png" />
-  </p>
-</details>
-
+>
 
 ## Governance & trust model
 
@@ -130,8 +63,6 @@ stakeholders:
 Proposal classes: Constitutional, Protocol, Treasury, Emergency, Operations. Approved
 changes execute via on‑chain timelock + Safe controls. Compliance‑by‑design for SEC,
 CFTC, GDPR, AML/KYC, and global trade/tax regimes.
-
-👉 Lifecycle diagram: `docs/diagrams/governance-lifecycle.png` (TODO).
 
 ## Why we win (benefits)
 
