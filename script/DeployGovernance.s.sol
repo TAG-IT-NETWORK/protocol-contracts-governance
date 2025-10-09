@@ -1,48 +1,68 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
-import {Script} from "forge-std/Script.sol";
-import {console2 as console} from "forge-std/console2.sol";
-import {ERC20Votes} from "openzeppelin-contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {TAGITGovernor} from "src/TAGITGovernor.sol";
-import {TAGITTimelock} from "src/TAGITTimelock.sol";
-import {TimelockController} from "openzeppelin-contracts/governance/TimelockController.sol";
+pragma solidity ^0.8.20;
+
+import "forge-std/Script.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
+import "@openzeppelin/contracts/governance/Governor.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+
+contract GovToken is ERC20Votes {
+    constructor() ERC20("TAGIT GOV", "TAGG") ERC20Permit("TAGIT GOV") { _mint(msg.sender, 1_000_000e18); }
+    // required overrides
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) { super._update(from,to,value); }
+    function nonces(address owner) public view override(ERC20Permit) returns (uint256) { return super.nonces(owner); }
+}
+
+contract Gov is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes {
+    constructor(IVotes _token)
+        Governor("TAGIT-Governor")
+        GovernorSettings(1 /*delay*/, 45818 /*period ~1w*/, 100_000e18 /*proposal threshold*/)
+        GovernorVotes(_token)
+    {}
+    function quorum(uint256) public pure override returns (uint256) { return 200_000e18; }
+    function votingDelay() public view override(Governor, GovernorSettings) returns (uint256) { return super.votingDelay(); }
+    function votingPeriod() public view override(Governor, GovernorSettings) returns (uint256) { return super.votingPeriod(); }
+    function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) { return super.proposalThreshold(); }
+}
 
 contract DeployGovernance is Script {
     function run() external {
-        address safe = vm.envOr("SAFE_ADDRESS", address(0));
-        require(safe != address(0), "SAFE_ADDRESS required");
-        uint256 minDelay = vm.envOr("MIN_DELAY_SECONDS", uint256(3600));
+        uint256 pk = vm.envUint("DEPLOYER_KEY_U256"); // used locally if you prefer numeric
+        vm.startBroadcast(); // forge uses DEPLOYER_KEY when provided
 
-        // Optional: reuse existing timelock
-        address maybeTimelock = vm.envOr("TIMELOCK_ADDRESS", address(0));
+        address;
+        address;
+        proposers[0] = msg.sender;
+        executors[0] = address(0);
 
-        vm.startBroadcast();
+        GovToken token = new GovToken();
+        TimelockController timelock = new TimelockController(2 days, proposers, executors, msg.sender);
+        Gov governor = new Gov(IVotes(address(token)));
 
-        TAGITTimelock timelock;
-        if (maybeTimelock != address(0)) {
-            timelock = TAGITTimelock(payable(maybeTimelock));
-            console.log("Reusing Timelock:", address(timelock));
-        } else {
-            address[] memory proposers = new address[](0);
-            address[] memory executors = new address[](1); executors[0] = address(0);
-            // ADMIN = SAFE from the start (no grants here)
-            timelock = new TAGITTimelock(minDelay, proposers, executors, safe);
-            console.log("Deployed Timelock:", address(timelock));
-        }
+        // OPTIONAL: wire governance → timelock roles etc. (left simple for now)
 
-        // Governor (wire to an existing ERC20Votes when known)
-        ERC20Votes token = ERC20Votes(address(0));
-        TAGITGovernor gov = new TAGITGovernor(
-            token,
-            TimelockController(address(timelock)),
-            1,          // votingDelay (blocks)
-            45818,      // votingPeriod (~1 week)
-            0,          // proposalThreshold (votes)
-            4           // quorumPercent
+        // Emit addresses for the Python shim to pick up (also dump to file):
+        console2.log("GovToken", address(token));
+        console2.log("TimelockController", address(timelock));
+        console2.log("Governor", address(governor));
+
+        // lightweight JSON dump for codex.py
+        string memory file = string.concat(vm.projectRoot(), "/script/out.addresses.json");
+        vm.writeJson(
+            string(
+                abi.encodePacked(
+                    '{"GovToken":"', vm.toString(address(token)),
+                    '","TimelockController":"', vm.toString(address(timelock)),
+                    '","Governor":"', vm.toString(address(governor)),
+                    '"}'
+                )
+            ),
+            file
         );
-        console.log("Deployed Governor:", address(gov));
 
-        // IMPORTANT: Do NOT grant roles here. The Safe (admin) will do it post‑deploy.
         vm.stopBroadcast();
     }
 }
