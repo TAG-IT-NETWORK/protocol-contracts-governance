@@ -1,0 +1,56 @@
+Protocol — Governance (TAGIT)
+
+What this repo is
+- Core governance contracts for TAGIT: Governor, Timelock, role/permission wiring, emergency controls, treasury hooks.
+- Governance executes on TAGIT L2 (OP Stack + EigenDA). L1 acts as the backstop via timelocks / pause switches; cross-domain actions can be signaled via CCIP where needed. 
+  Ref: Deployment/architecture standards. 
+  Sources: Deployment Manual (repo purpose, workflows) and L2 governance notes. 
+
+Quick TL;DR
+- Build:     forge build
+- Test:      forge test --match-path test/*Governance*.t.sol
+- Deploy:    codex deploy --repo protocol-contracts-governance --env stage --version $GIT_SHA
+- Verify:    codex verify --repo protocol-contracts-governance --env stage --checks timelock,roles,events
+- Rollback:  codex rollback --repo protocol-contracts-governance --env stage --to previous-stable
+
+When to use this repo
+- Any change to Governor parameters, voting rules, timelock durations, guardians/emergency pause, or Safe/Timelock wiring.
+- Never store secrets here; rotate keys via Vault/SSO and keep CODEOWNERS/approvals enforced.
+
+Environments & required checks (gates)
+- Envs: dev, stage, prod (prod requires dual approvals).
+- Required checks: build, tests, slither, coverage>=85, sbom, sign, provenance.
+- CI/CD is standardized via reusable workflows from strategy-governance.
+
+Local dev (Foundry)
+1) Install Foundry, then:
+   forge install
+   forge build
+   forge test --match-path test/*Governance*.t.sol
+
+Deploy (with Codex)
+# Stage (example)
+codex deploy --repo protocol-contracts-governance --env stage --version $GIT_SHA
+codex verify --repo protocol-contracts-governance --env stage --checks timelock,roles,events
+
+Emergency & rollback
+- If post-deploy checks fail or a misconfig is detected:
+  codex rollback --repo protocol-contracts-governance --env <env> --to previous-stable
+- For critical incidents, use the L1 timelock/emergency controls and follow RUNBOOK DPL-CTR-001.
+
+Security & compliance
+- Enforce SSO/MFA; least-privilege; CODEOWNERS required on sensitive paths.
+- Do NOT commit secrets. Prefer OIDC→cloud roles or Vault; rotate per schedule.
+- Supply chain controls: Slither/SAST, SBOM, signing, provenance, dependency review.
+
+Repo layout (skeleton)
+- /.codex/Codexfile.yaml
+- /.github/workflows/use-codex.yml
+- /CODEOWNERS
+- /SECURITY.md
+- /README.md  (agentic details for automation)
+
+Useful links
+- Reusable workflows: strategy-governance/.github/workflows/
+- Policies & stems: strategy-governance/Policies/ and Stems/
+- Runbooks index (inc. DPL-CTR-001)
