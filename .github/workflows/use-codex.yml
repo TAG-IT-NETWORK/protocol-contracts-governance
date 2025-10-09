@@ -1,0 +1,49 @@
+name: Deploy via Codex (dev)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Build
+        run: forge build -vvv
+
+      - name: Deploy (dev)
+        env:
+          L2_RPC_DEV: ${{ secrets.L2_RPC_DEV }}
+          PRIVATE_KEY_DEV: ${{ secrets.PRIVATE_KEY_DEV }}
+          SAFE_ADDRESS_DEV: ${{ secrets.SAFE_ADDRESS_DEV }}
+        run: |
+          forge script script/DeployGovernance.s.sol \
+            --rpc-url "$L2_RPC_DEV" \
+            --private-key "$PRIVATE_KEY_DEV" \
+            --broadcast -vvvv --slow | tee deploy.out
+
+      - name: Extract Timelock
+        id: tl
+        run: |
+          TL=$(grep -Eo "0x[0-9a-fA-F]{40}" deploy.out | tail -1)
+          echo "timelock=$TL" >> $GITHUB_OUTPUT
+
+      - name: Upload broadcast
+        uses: actions/upload-artifact@v4
+        with:
+          name: broadcast
+          path: broadcast
+
+      # (Optional) auto-save secret if you permit the workflow a GH_TOKEN with repo:actions scope
+      # - name: Save TIMELOCK_ADDRESS_DEV secret
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GH_TOKEN_REPO_ADMIN }}
+      #   run: gh secret set TIMELOCK_ADDRESS_DEV -R $GITHUB_REPOSITORY -b "${{ steps.tl.outputs.timelock }}"
