@@ -102,10 +102,9 @@ are versioned in adjacent repos within the TAG‑IT‑NETWORK org.
 * **Researchers/Auditors** — Request specs and threat models.
 * **Investors/Partners** — Contact core team for diligence package.
 
-## Quickstart (dev)
+## Foundry Quickstart (dev)
 
 ```bash
-forge install
 forge build
 forge test -vv
 ```
