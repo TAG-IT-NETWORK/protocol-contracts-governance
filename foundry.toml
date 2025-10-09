@@ -1,0 +1,20 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.23"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 200
+
+remappings = [
+  "@openzeppelin/=lib/openzeppelin-contracts/"
+  # If you use the upgradeable package too, also add:
+  # "@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/"
+]
+
+[fmt]
+line_length = 100
+tab_width = 2
+bracket_spacing = true
+int_types = "short"

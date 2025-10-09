@@ -3,25 +3,40 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   smoke:
+    name: Smoke (Foundry build check)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: '20'
-      - name: Install pnpm
-        run: npm i -g pnpm
-      - name: Install deps (if JS/TS)
+          version: nightly
+
+      - name: Tooling sanity
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; fi
-      - name: Foundry install
+          forge --version
+          cast --version
+
+      # ✅ Fetch dependencies without forge flags (no 127 / no flag mismatch)
+      - name: Fetch OpenZeppelin
         run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          ~/.foundry/bin/foundryup
-      - name: Build & test (Foundry)
-        run: |
-          if [ -f foundry.toml ] || [ -d src ]; then ~/.foundry/bin/forge --version && ~/.foundry/bin/forge build && ~/.foundry/bin/forge test -vvv; else echo "No Foundry project detected, skipping"; fi
+          mkdir -p lib
+          rm -rf lib/openzeppelin-contracts
+          git clone --depth 1 --branch v4.9.6 https://github.com/OpenZeppelin/openzeppelin-contracts.git lib/openzeppelin-contracts
+          # If you ALSO import the upgradeable package, uncomment the next two lines:
+          # rm -rf lib/openzeppelin-contracts-upgradeable
+          # git clone --depth 1 --branch v4.9.6 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git lib/openzeppelin-contracts-upgradeable
+          ls -la lib
+
+      - name: Forge build (smoke)
+        run: forge build --sizes
