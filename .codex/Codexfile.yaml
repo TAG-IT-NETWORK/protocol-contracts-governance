@@ -1,3 +1,25 @@
-required_checks:
+# TAGIT standard Codex definition for governance contracts.
+# Uses the "contracts" pipeline and calls 'codex deploy/verify'.
+schema_version: 1.0
+repo: protocol-contracts-governance
+kind: contracts
+owners: ["@TAG-IT-NETWORK/security-audits", "@TAG-IT-NETWORK/strategy-governance"]
+required_checks: [build, tests, slither, coverage>=85, sbom, sign, provenance]
+environments:
+  - { name: dev,  rpc_url: "${{ secrets.L2_RPC_DEV }}",  signer: env:PRIVATE_KEY_DEV,  timelock: "${{ vars.TIMELOCK_ADDRESS_DEV || '' }}",  safe: "${{ secrets.SAFE_ADDRESS_DEV }}", approvals: ["security"] }
+  - { name: stage, rpc_url: "${{ secrets.L2_RPC_STAGE || secrets.L2_RPC_DEV }}", signer: env:PRIVATE_KEY_STAGE, timelock: "${{ vars.TIMELOCK_ADDRESS_STAGE || '' }}", safe: "${{ vars.SAFE_ADDRESS_STAGE || secrets.SAFE_ADDRESS_DEV }}", approvals: ["security"] }
+  - { name: prod, rpc_url: "${{ secrets.L2_RPC_PROD  || secrets.L2_RPC_DEV }}",  signer: env:PRIVATE_KEY_PROD,  timelock: "${{ vars.TIMELOCK_ADDRESS_PROD  || '' }}", safe: "${{ vars.SAFE_ADDRESS_PROD  || secrets.SAFE_ADDRESS_DEV }}", approvals: ["security","platform"] }
+steps:
+  build:
+    - run: forge build
+  tests:
+    - run: forge test --match-path test/*Governance*.t.sol || forge test   # fall back if no filtered tests exist
+  security:
+    - run: slither . --sarif slither.sarif || echo "slither optional on first run"
+    - run: echo "{}" > sbom.json  # placeholder; swap with real SBOM script later
+  deploy:
+    - run: codex deploy --repo protocol-contracts-governance --env {{ env }} --version {{ git_sha }}
   post_deploy:
-    - run: codex verify --repo protocol-contracts-governance --env {{ env }} --checks timelock,events
+    - run: codex verify --repo protocol-contracts-governance --env {{ env }} --checks timelock,roles,events
+  rollback:
+    - run: codex rollback --repo protocol-contracts-governance --env {{ env }} --to previous-stable

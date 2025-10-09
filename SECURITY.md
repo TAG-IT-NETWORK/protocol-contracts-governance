@@ -1,0 +1,1 @@
+- Enforce SSO + MFA; never commit secrets. Rotate keys per schedule. Report issues to security@tagit.example.
