@@ -1,0 +1,43 @@
+name: use-codex
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (for scripts if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly # or pin to a specific release if you prefer
+
+      - name: Show versions
+        run: |
+          forge --version
+          cast --version
+
+      - name: Install OZ (v5) deps
+        run: forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-commit
+
+      - name: Build & test (Foundry)
+        run: |
+          forge build
+          forge test -vv
+
+      # keep your Codex pipeline call here if needed, e.g.:
+      # - name: Codex pipeline
+      #   uses: TAG-IT-NETWORK/strategy-governance/.github/workflows/pipeline-contracts.yml@main
+      #   with:
+      #     env: dev
