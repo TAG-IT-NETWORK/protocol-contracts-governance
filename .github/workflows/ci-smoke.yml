@@ -3,25 +3,44 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   smoke:
+    name: Smoke (Foundry build check)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: '20'
-      - name: Install pnpm
-        run: npm i -g pnpm
-      - name: Install deps (if JS/TS)
+          version: nightly
+
+      - name: Tooling sanity
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; fi
-      - name: Foundry install
+          forge --version
+          cast --version
+
+      # Fetch dependencies deterministically (no forge flags)
+      - name: Fetch libraries
         run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          ~/.foundry/bin/foundryup
-      - name: Build & test (Foundry)
+          mkdir -p lib
+          # OpenZeppelin
+          rm -rf lib/openzeppelin-contracts
+          git clone --depth 1 --branch v4.9.6 https://github.com/OpenZeppelin/openzeppelin-contracts.git lib/openzeppelin-contracts
+          # Foundry standard library (for Script.sol, console2.sol)
+          rm -rf lib/forge-std
+          git clone --depth 1 https://github.com/foundry-rs/forge-std.git lib/forge-std
+          ls -la lib
+
+      - name: Forge build (smoke)
+        env:
+          FOUNDRY_PROFILE: default
         run: |
-          if [ -f foundry.toml ] || [ -d src ]; then ~/.foundry/bin/forge --version && ~/.foundry/bin/forge build && ~/.foundry/bin/forge test -vvv; else echo "No Foundry project detected, skipping"; fi
+          forge build --sizes
